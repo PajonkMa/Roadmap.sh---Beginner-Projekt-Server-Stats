@@ -26,6 +26,10 @@ It can be set to run automatically upon SSH login.
 git clone git@github.com:PajonkMa/Roadmap.sh---Beginner-Projekt-Server-Stats.git
 cd Roadmap.sh---Beginner-Projekt-Server-Stats
 chmod +x server-stats.sh
+```
 
 2️⃣ Run the script
+
+```bash
 ./server-stats.sh
+```
