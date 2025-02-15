@@ -3,7 +3,6 @@
 echo "-------------------------------"
 echo "  SERVER PERFORMANCE STATS  "
 echo "-------------------------------"
-
 echo "🕒 System Uptime:"
 uptime -p
 echo ""
@@ -31,13 +30,42 @@ echo "👤 Logged-in Users:"
 who
 echo ""
 
-echo "❌ Banned IPs in the last 24 hours:"
+echo "🚨 Security Status: SSH Failures & Banned IPs 🚨"
 
-if sudo test -r /var/log/auth.log; then
-    BANNED_IP_COUNT=$(sudo grep "Ban" /var/log/auth.log | grep "$(date --date='yesterday' '+%b %d')" | wc -l)
-    echo "Total banned: $BANNED_IP_COUNT"
+# ✅ 1️⃣ Gebannte IPs in den letzten 24 Stunden
+BANNED_IPS_24H=$(sudo grep "Ban" /var/log/auth.log | grep "$(date --date='yesterday' '+%b %d')" | wc -l)
+echo "❌ Banned IPs in the last 24h: $BANNED_IPS_24H"
+
+# ✅ 2️⃣ Fehlgeschlagene SSH-Login-Versuche in den letzten 24 Stunden
+FAILED_LOGINS_24H=$(sudo grep "Failed password" /var/log/auth.log | grep "$(date --date='yesterday' '+%b %d')" | wc -l)
+echo "🔑 Failed SSH logins in the last 24h: $FAILED_LOGINS_24H"
+
+# ✅ 3️⃣ Letzter Login-Zeitpunkt holen
+LAST_LOGIN_TIME=$(last -n 2 -F | awk 'NR==2 {print $4, $5, $6, $7, $8}')
+echo "⏳ Last login was on: $LAST_LOGIN_TIME"
+
+# ✅ 4️⃣ Gebannte IPs seit letztem Login
+BANNED_SINCE_LAST_LOGIN=$(sudo awk -v lastlogin="$LAST_LOGIN_TIME" '$0 ~ lastlogin,0 {if ($0 ~ /Ban/) count++} END {print count+0}' /var/log/auth.log)
+echo "🚫 Banned IPs since last login: $BANNED_SINCE_LAST_LOGIN"
+
+# ✅ 5️⃣ Fehlgeschlagene Logins seit letztem Login
+FAILED_SINCE_LAST_LOGIN=$(sudo awk -v lastlogin="$LAST_LOGIN_TIME" '$0 ~ lastlogin,0 {if ($0 ~ /Failed password/) count++} END {print count+0}' /var/log/auth.log)
+echo "❗ Failed SSH logins since last login: $FAILED_SINCE_LAST_LOGIN"
+
+echo ""
+
+echo "📦 Checking for package updates..."
+
+# Prüfen, ob Updates verfügbar sind
+UPDATES=$(sudo apt list --upgradable 2>/dev/null | grep -c "upgradable")
+
+# Falls Updates verfügbar sind, zeige die Anzahl und den Update-Befehl
+if [ "$UPDATES" -gt 0 ]; then
+    echo "✅ $UPDATES updates available!"
+    echo "💡 To update, run:"
+    echo -e "\033[1;32m sudo apt update && sudo apt upgrade -y \033[0m"
 else
-    echo "No permission to read /var/log/auth.log (run as sudo for details)"
+    echo "🎉 System is up to date!"
 fi
 
 echo ""
